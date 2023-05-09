@@ -19,7 +19,7 @@ public class APIRequest {
         gson = new Gson();
     }
 
-    // Создание нового пользователя
+    // Creating User
     public String createUser(Map<String, String> userData) throws IOException {
         String url = BASE_URL + "/users";
         String jsonString = gson.toJson(userData);
@@ -33,7 +33,7 @@ public class APIRequest {
         }
     }
 
-    // Обновление пользователя
+    // Updating User
     public String updateUser(int userId, Map<String, String> userData) throws IOException {
         String url = BASE_URL + "/users/" + userId;
         String jsonString = gson.toJson(userData);
@@ -47,7 +47,7 @@ public class APIRequest {
         }
     }
 
-    // Удаление пользователя
+    // Deleting User
     public boolean deleteUser(int userId) throws IOException {
         String url = BASE_URL + "/users/" + userId;
         Request request = new Request.Builder()
@@ -59,7 +59,7 @@ public class APIRequest {
         }
     }
 
-    // Получение информации обо всех пользователях
+    //  Get info of all users
     public List<Map<String, Object>> getAllUsers() throws IOException {
         String url = BASE_URL + "/users";
         Request request = new Request.Builder()
@@ -71,7 +71,7 @@ public class APIRequest {
         }
     }
 
-    // Получение информации о пользователе с определенным id
+    //  Get info of a user with specific id
     public Map<String, Object> getUserById(int userId) throws IOException {
         String url = BASE_URL + "/users/" + userId;
         Request request = new Request.Builder()
@@ -83,7 +83,7 @@ public class APIRequest {
         }
     }
 
-    // Получение информации о пользователе с определенным username
+    // Get info of a user with specific Username
     public Map<String, Object> getUserByUsername(String username) throws IOException {
         String url = BASE_URL + "/users?username=" + username;
         Request request = new Request.Builder()
@@ -96,37 +96,43 @@ public class APIRequest {
         }
     }
 
-    // Вывод комментариев к последнему посту пользователя и запись их в файл
-    public void getLastPostComments(int userId) throws IOException {
+    // Get posts of a user
+    public List<Map<String, Object>> getPosts(int userId) throws IOException {
         String url = BASE_URL + "/users/" + userId + "/posts";
         Request request = new Request.Builder()
                 .url(url)
                 .get()
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            List<Map<String, Object>> posts = gson.fromJson(response.body().string(), List.class);
-            if (posts.isEmpty()) {
-                System.out.println("No posts found for user " + userId);
-                return;
-            }
-            Map<String, Object> lastPost = posts.get(posts.size() - 1);
-            int lastPostId = ((Double) lastPost.get("id")).intValue();
-
-            url = BASE_URL + "/posts/" + lastPostId + "/comments";
-            request = new Request.Builder()
-                    .url(url)
-                    .get()
-                    .build();
-            try (Response commentsResponse = client.newCall(request).execute()) {
-                List<Map<String, Object>> comments = gson.fromJson(commentsResponse.body().string(), List.class);
-
-                String fileName = "user-" + userId + "-post-" + lastPostId + "-comments.json";
-                try (FileWriter file = new FileWriter(fileName)) {
-                    gson.toJson(comments, file);
-                }
-                System.out.println("Comments for the last post of user " + userId + " saved to " + fileName);
-            }
+            return gson.fromJson(response.body().string(), List.class);
         }
+    }
+
+    // Get the last post of a user
+    public Map<String, Object> getLastPost(int userId) throws IOException {
+        List<Map<String, Object>> posts = getPosts(userId);
+        return posts.isEmpty() ? null : posts.get(posts.size() - 1);
+    }
+
+    // Get comments of a post
+    public List<Map<String, Object>> getComments(int postId) throws IOException {
+        String url = BASE_URL + "/posts/" + postId + "/comments";
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            return gson.fromJson(response.body().string(), List.class);
+        }
+    }
+
+    // Write comments to a file
+    public void writeCommentsToFile(int userId, int postId, List<Map<String, Object>> comments) throws IOException {
+        String fileName = "user-" + userId + "-post-" + postId + "-comments.json";
+        try (FileWriter file = new FileWriter(fileName)) {
+            gson.toJson(comments, file);
+        }
+        System.out.println("Comments for the last post of user " + userId + " saved to " + fileName);
     }
 
     // Вывод всех открытых задач для пользователя
